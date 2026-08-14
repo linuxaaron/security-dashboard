@@ -2,11 +2,10 @@ from fastapi.testclient import TestClient
 
 from app.main import app
 
-client = TestClient(app)
-
 
 def test_dashboard_summary():
-    response = client.get("/api/v1/dashboard/summary")
+    with TestClient(app) as client:
+        response = client.get("/api/v1/dashboard/summary")
 
     assert response.status_code == 200
 
@@ -31,7 +30,8 @@ def test_dashboard_summary():
 
 
 def test_dashboard_risk_components():
-    response = client.get("/api/v1/dashboard/summary")
+    with TestClient(app) as client:
+        response = client.get("/api/v1/dashboard/summary")
 
     assert response.status_code == 200
 
