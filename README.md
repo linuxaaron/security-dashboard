@@ -1,35 +1,37 @@
 # Security Dashboard
 
-A small security monitoring stack for keeping track of assets, CVEs and security events. The backend exposes a REST API and calculates a repeatable security score from the data in the database. The frontend turns that data into a dashboard that can be used locally or as a base for a larger security platform.
+Ein Security Dashboard zur Überwachung von Assets, Schwachstellen und Sicherheitsereignissen.
 
-This is a portfolio project, but the code is structured like a real application rather than a static demo.
+Das Backend stellt eine REST API bereit und berechnet aus den vorhandenen Daten einen nachvollziehbaren Security Score. Das Frontend stellt diese Daten in einem übersichtlichen Dashboard dar.
 
-## What it does
+Das Projekt ist als Portfolio Projekt gedacht. Die Struktur orientiert sich trotzdem an einer normalen Anwendung mit getrenntem Frontend, Backend, Datenbank, Tests und CI.
 
-The application currently covers four main areas:
+## Was das Projekt kann
 
-1. Asset inventory
-2. Vulnerability tracking
-3. Security event tracking
-4. Risk scoring
+Aktuell gibt es vier zentrale Bereiche:
 
-CVE data can be pulled from the NVD CVE API 2.0. Imported entries are normalized before they are stored in the database.
+1. Asset Verwaltung
+2. Schwachstellenverwaltung
+3. Erfassung von Sicherheitsereignissen
+4. Risikobewertung
 
-The dashboard reads the backend API and shows the current security score, risk level, assets, vulnerabilities and risk components. The frontend refreshes the dashboard data every 30 seconds.
+CVE Daten können über die NVD CVE API 2.0 abgerufen werden. Die importierten Daten werden vor dem Speichern normalisiert.
 
-## Tech stack
+Das Dashboard ruft die Daten über die Backend API ab und zeigt Security Score, Risikostufe, Assets, Schwachstellen und die einzelnen Risikokomponenten an. Die Dashboard Daten werden alle 30 Sekunden aktualisiert.
 
-| Part | Technology |
+## Technischer Aufbau
+
+| Bereich | Technologie |
 | --- | --- |
 | Frontend | Next.js 15, React 19, TypeScript |
 | Backend | FastAPI, Uvicorn |
-| Database | SQLite with SQLAlchemy |
-| Vulnerability data | NVD CVE API 2.0 |
-| Testing | pytest, FastAPI TestClient |
-| Containers | Docker |
+| Datenbank | SQLite mit SQLAlchemy |
+| Schwachstellendaten | NVD CVE API 2.0 |
+| Tests | pytest, FastAPI TestClient |
+| Container | Docker |
 | CI | GitHub Actions |
 
-## Project structure
+## Projektstruktur
 
 ```text
 security-dashboard/
@@ -53,11 +55,11 @@ security-dashboard/
 └── README.md
 ```
 
-## Running it locally
+## Lokale Installation
 
 ### Backend
 
-Python 3.13 is used for development.
+Für die Entwicklung wird Python 3.13 verwendet.
 
 ```bash
 cd backend
@@ -67,13 +69,13 @@ pip install -r requirements.txt
 uvicorn app.main:app --reload
 ```
 
-The API is then available at:
+Die API ist danach unter folgendem Adresse erreichbar:
 
 ```text
 http://127.0.0.1:8000
 ```
 
-Useful endpoints:
+Wichtige Endpoints:
 
 ```text
 GET  /health
@@ -85,7 +87,7 @@ GET  /api/v1/dashboard/summary
 POST /api/v1/vulnerabilities/import/{cve_id}
 ```
 
-Example CVE import:
+Beispiel für den Import einer CVE:
 
 ```bash
 curl -X POST http://127.0.0.1:8000/api/v1/vulnerabilities/import/CVE-2026-53647
@@ -93,7 +95,7 @@ curl -X POST http://127.0.0.1:8000/api/v1/vulnerabilities/import/CVE-2026-53647
 
 ### Frontend
 
-Open a second terminal:
+In einem zweiten Terminal:
 
 ```bash
 cd frontend
@@ -102,84 +104,71 @@ cp .env.example .env.local
 npm run dev
 ```
 
-The dashboard runs at:
+Das Dashboard ist anschließend unter folgender Adresse erreichbar:
 
 ```text
 http://localhost:3000
 ```
 
-By default the frontend expects the API at `http://127.0.0.1:8000`.
+Standardmäßig erwartet das Frontend die API unter `http://127.0.0.1:8000`.
 
-To use another API URL, set:
-
-```text
-NEXT_PUBLIC_API_URL=http://your-api-host:8000
-```
-
-## Risk score
-
-The risk engine is deliberately simple and deterministic. The same input produces the same result, which makes the calculation easy to test and reason about.
-
-The score combines four components:
-
-| Component | Weight |
-| --- | ---: |
-| CVSS | 40% |
-| Vulnerabilities | 25% |
-| Asset risk | 20% |
-| Security events | 15% |
-
-The resulting score ranges from 0 to 100. A higher score means a better security posture.
-
-The current levels are:
+Wenn die API an einer anderen Adresse läuft, kann die URL über folgende Variable gesetzt werden:
 
 ```text
-80 to 100  low
-60 to 79   medium
-40 to 59   high
-0 to 39    critical
+NEXT_PUBLIC_API_URL=http://dein-api-host:8000
 ```
 
-The implementation lives in `backend/app/services/risk_engine.py`.
+## Security Score
 
-## Testing
+Die Risikobewertung wird in `backend/app/services/risk_engine.py` berechnet.
 
-Run the backend test suite with:
+Der Score liegt zwischen 0 und 100. Ein höherer Wert bedeutet eine bessere Sicherheitslage.
+
+In die Berechnung fließen unter anderem ein:
+
+- durchschnittlicher CVSS Wert
+- Anzahl kritischer Schwachstellen
+- Anzahl hoher Schwachstellen
+- Risiko der vorhandenen Assets
+- Anzahl der Sicherheitsereignisse
+
+Die einzelnen Komponenten werden getrennt berechnet und anschließend gewichtet zusammengeführt.
+
+## Tests
+
+Die Backend Tests können mit folgendem Befehl ausgeführt werden:
 
 ```bash
 cd backend
-source .venv/bin/activate
 pytest -q
 ```
 
-The test suite covers the risk calculation and the dashboard API. GitHub Actions runs the backend tests and frontend build on changes.
+Die Tests prüfen unter anderem die Risk Engine und den Dashboard Endpoint über den FastAPI TestClient.
 
 ## Docker
 
-Dockerfiles are included for the backend and frontend. The compose file is kept in the repository as the starting point for a container based setup. The current local development workflow uses the commands above.
+Für die Container Umgebung stehen Dockerfiles für Backend und Frontend bereit.
 
-## Security
+```bash
+docker compose up --build
+```
 
-Do not put API keys, passwords or other credentials into the repository.
+## Sicherheit
 
-Local SQLite databases and environment files are ignored by Git. If an NVD API key is used, provide it through an environment variable instead of committing it to source control.
+Lokale Datenbanken, virtuelle Python Umgebungen und Umgebungsdateien werden nicht in Git eingecheckt.
 
-The application is intended for development and portfolio use at this stage. Authentication, authorization, production database configuration and hardened deployment are still open work.
+NVD API Zugangsdaten dürfen nicht im Quellcode hinterlegt werden. Falls ein API Key verwendet wird, sollte dieser über eine Umgebungsvariable bereitgestellt werden.
 
-## Roadmap
+## Entwicklungsstand
 
-The next useful additions would be:
+Das Projekt befindet sich in aktiver Entwicklung. Die aktuelle Version ist vor allem als Portfolio und technische Grundlage gedacht.
 
-- PostgreSQL support
-- Authentication and role based access
-- Asset detail pages
-- Vulnerability remediation workflow
-- More security event sources
-- Historical risk scores
-- Better CVE filtering and search
-- Production deployment configuration
-- More API and frontend tests
+## Geplante Erweiterungen
 
-## License
-
-No license has been selected yet. The repository is currently published as a portfolio project.
+- Authentifizierung und Benutzerverwaltung
+- PostgreSQL Unterstützung
+- Erweiterte Asset Verwaltung
+- Verwaltung von Maßnahmen zur Behebung von Schwachstellen
+- Import weiterer Security Events
+- Historische Entwicklung des Security Scores
+- Deployment für eine öffentliche Demo
